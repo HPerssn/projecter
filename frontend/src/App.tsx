@@ -11,9 +11,48 @@ interface Hold {
 export default function App() {
     const [imageSrc, setImageSrc] = useState<string | null>(null);
     const [holds, setHolds] = useState<Hold[]>([]);
+    const [saving, setSaving] = useState(false)
+    const [savedId, setSavedId] = useState<string | null>(null)
     const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
     const imageRef = useRef<HTMLImageElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+
+    const API = "http://localhost:8080"
+
+    async function handleSave() {
+        if (holds.length === 0) return
+        setSaving(true)
+        const id = await saveRoute(holds)
+        setSavedId(id)
+        setSaving(false)
+    }
+
+    async function saveRoute(holds: Hold[]) {
+        // 1. Create the route
+        const routeRes = await fetch(`${API}/api/routes`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: "New Route", grade: "V?" }),
+        })
+        const route = await routeRes.json()
+
+        // 2. Save the holds
+        const holdsRes = await fetch(`${API}/api/routes/${route.id}/holds`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(
+                holds.map((h, i) => ({
+                    x_pct: h.x,
+                    y_pct: h.y,
+                    note: "",
+                    seq_order: i + 1,
+                }))
+            ),
+        })
+        const saved = await holdsRes.json()
+        console.log("saved route:", route.id, "holds:", saved)
+        return route.id
+    }
 
     function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
@@ -100,6 +139,18 @@ export default function App() {
                     >
                         clear all
                     </span>
+                </p>
+            )}
+
+            {imageSrc && holds.length > 0 && (
+                <button onClick={handleSave} disabled={saving}>
+                    {saving ? "Saving..." : "Save Route"}
+                </button>
+            )}
+
+            {savedId && (
+                <p style={{ color: "#00ff88", fontSize: 13 }}>
+                    Saved! Route ID: {savedId}
                 </p>
             )}
         </div>
