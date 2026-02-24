@@ -10,7 +10,7 @@ CREATE TABLE routes (
 
 CREATE TABLE holds (
     id         uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    route_id   uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    route_id   uuid REFERENCES routes(id) ON DELETE CASCADE,
     x_pct      float NOT NULL,
     y_pct      float NOT NULL,
     note       text,
